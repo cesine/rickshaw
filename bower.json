@@ -1,8 +1,23 @@
 {
   "name": "rickshaw",
-  "description": "Rickshaw is a JavaScript toolkit for creating interactive time series graphs.",
-  "main": "./rickshaw",
+  "version": "1.5.10",
+  "description": "JavaScript toolkit for creating interactive real-time graphs",
+  "main": [
+    "rickshaw.js",
+    "rickshaw.css"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/shutterstock/rickshaw",
+  "authors": [
+    "David Chester <dchester@shutterstock.com>",
+    "Douglas Hunter <douglashunter@gmail.com>",
+    "Silas Sewell <silas@sewell.org>",
+    "Johan Otten <drakonen@drakonen.com>",
+    "Zack Tanner <ztanner@usc.edu>"
+  ],
+  "moduleType": [
+    "amd"
+  ],
   "keywords": [
     "d3",
     "charts",
@@ -10,15 +25,14 @@
     "svg",
     "graph"
   ],
-  "homepage": "https://github.com/shutterstock/rickshaw",
-  "moduleType": [],
   "ignore": [
     "**/.*",
     "bower_components",
     "examples",
     "node_modules",
     "tests",
-    "turorial"
+    "tutorial",
+    "vendor"
   ],
   "dependencies": {
     "d3": "~3.5.5"
