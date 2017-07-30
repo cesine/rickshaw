@@ -3,7 +3,6 @@
 	<meta charset="utf-8">
 
 	<link type="text/css" rel="stylesheet" href="../rickshaw.css">
-	<link type="text/css" rel="stylesheet" href="css/lines.css">
 
 	<script src="../vendor/d3.v3.js"></script>
 	<script src="../rickshaw.js"></script>
@@ -16,20 +15,52 @@
 	.column { display: inline-block }
 	.legend { background: white }
 	.legend .line { color: #333 }
+
+	div, span, p, td {
+		font-family: Arial, sans-serif;
+	}
+	.chart {
+		display: inline-block;
+	}
+	.slider {
+		position: relative;
+	}
+	.legend {
+		display: inline-block;
+		position: relative;
+		left: 8px;
+	}
+	.legend_container {
+		position: absolute;
+		right: 0;
+		bottom: 26px;
+		width: 0;
+	}
+	.chart_container {
+		float: left;
+		position: relative;
+	}
+
 	</style>
 </head>
 
 <body>
 
+<div class="header">
+	<h3 class="text-muted">React Redux Example</h3>
+	<ul>
+		<li>https://medium.com/@pbesh/linked-highlighting-with-react-d3-js-and-reflux-16e9c0b2210b</li>
+		<li>https://medium.com/@ilikepiecharts/about-using-d3-react-squared-an-example-8cc5e5a6b58e</li>
+		<li>https://oli.me.uk/2015/09/09/d3-within-react-the-right-way/</li>
+		<li>https://react.rocks/tag/Chart</li>
+		<li>https://github.com/react-d3/react-d3-core/blob/aca623fae9fd01aa4c7217c640b6de3995f369b5/react-d3-core.js#L5895</li>
+		<li>https://blog.serverdensity.com/time-series-charts-react-redux-d3/</li>
+		<li>http://software.es.net/react-timeseries-charts/#/?_k=l60al6</li>
+	</ul>
+</div>
+
 <div id="app">
 </div>
-
-<div class="column">
-	<div id="chart"></div>
-	<div id="slider"></div>
-</div>
-<div class="column" id="legend"></div>
-
 
 <script>
 // deep cloning function excerpted from underscore.js
@@ -99,7 +130,7 @@ const initialstate = {
 };
 
 function graphReducer(_state = initialstate, action = null) {
-	let state = deepClone(_state); // deepClone == clone
+	let state = deepClone(_state);
 	switch (action.type) {
 	case 'DATA_CHANGED':
 		return state;
@@ -111,7 +142,8 @@ function graphReducer(_state = initialstate, action = null) {
 }
 
 const store = Redux.createStore(graphReducer);
-
+initialstate.element =  document.createElement('div');
+var graph = new Rickshaw.Graph(initialstate);
 const Provider = ReactRedux.Provider;
 
 class App extends React.Component {
@@ -124,15 +156,15 @@ class App extends React.Component {
 				React.createElement(Graph, {
 					key: 'chart',
 					id: 'chart'
-				}, `Graph ${this.props.graph}`),
-				React.createElement('Slider', {
+				}),
+				React.createElement(Slider, {
 					key: 'slider'
-				}, `Slider ${this.props.graph}`)
+				})
 			]),
-			React.createElement('Legend', {
+			React.createElement(Legend, {
 				className: "column legend",
 				key: 'row2'
-			}, `Legend ${this.props.graph}`),
+			}),
 		]);
 	}
 }
@@ -143,10 +175,15 @@ class Slider extends React.Component {
 	render() {
 		var slider = new Rickshaw.Graph.RangeSlider.Preview({
 			graph: graph,
-			element: document.querySelector('#slider')
+			element: document.createElement('div')
 		});
 
-		return React.createElement('div', null, `Slider ${this.props.graph}`);
+		return React.createElement('div', {
+			className: 'slider',
+			dangerouslySetInnerHTML: {
+				__html: slider.element.innerHTML
+			}
+		});
 	}
 }
 </script>
@@ -154,16 +191,29 @@ class Slider extends React.Component {
 <script>
 class Graph extends React.Component {
 	render() {
-		initialstate.element =  document.getElementById('chart');
-		var graph = new Rickshaw.Graph(initialstate);
 
 		var detail = new Rickshaw.Graph.HoverDetail({
 			graph: graph
 		});
 
+		graph.render();
+
+		return React.createElement('div', {
+			className: 'rickshaw_graph chart',
+			dangerouslySetInnerHTML: {
+				__html: graph.element.innerHTML
+			}
+		});
+	}
+}
+</script>
+
+<script>
+class Legend extends React.Component {
+	render() {
 		var legend = new Rickshaw.Graph.Legend({
 			graph: graph,
-			element: document.getElementById('legend')
+			element: document.createElement('div')
 		});
 
 		var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
@@ -179,18 +229,12 @@ class Graph extends React.Component {
 			legend: legend
 		});
 
-		graph.render();
-
-
-		return React.createElement('div', null, `Graph  ${this.props.graph}`);
-	}
-}
-</script>
-
-<script>
-class Legend extends React.Component {
-	render() {
-		return React.createElement('div', null, `Legend ${this.props.graph}`);
+		return React.createElement('div', {
+			className: 'column rickshaw_legend legend',
+			dangerouslySetInnerHTML: {
+				__html: legend.element.innerHTML
+			}
+		});
 	}
 }
 </script>
