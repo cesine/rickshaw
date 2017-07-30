@@ -88,52 +88,57 @@ for (var i = 0; i < 75; i++) {
 }
 
 const initialstate = {
-	renderer: 'multi',
-	width: 900,
-	height: 500,
-	dotSize: 5,
-	series: [{
-		name: 'temperature',
-		data: seriesData.shift(),
-		color: 'rgba(255, 0, 0, 0.4)',
-		renderer: 'stack'
-	}, {
-		name: 'heat index',
-		data: seriesData.shift(),
-		color: 'rgba(255, 127, 0, 0.4)',
-		renderer: 'stack'
-	}, {
-		name: 'dewpoint',
-		data: seriesData.shift(),
-		color: 'rgba(127, 0, 0, 0.3)',
-		renderer: 'scatterplot'
-	}, {
-		name: 'pop',
-		data: seriesData.shift().map(function(d) {
-			return {
-				x: d.x,
-				y: d.y / 4
-			}
-		}),
-		color: 'rgba(0, 0, 127, 0.4)',
-		renderer: 'bar'
-	}, {
-		name: 'humidity',
-		data: seriesData.shift().map(function(d) {
-			return {
-				x: d.x,
-				y: d.y * 1.5
-			}
-		}),
-		renderer: 'line',
-		color: 'rgba(0, 0, 127, 0.25)'
-	}]
+	graph: {
+		renderer: 'multi',
+		width: 900,
+		height: 500,
+		dotSize: 5,
+		series: [{
+			name: 'temperature',
+			data: seriesData.shift(),
+			color: 'rgba(255, 0, 0, 0.4)',
+			renderer: 'stack'
+		}, {
+			name: 'heat index',
+			data: seriesData.shift(),
+			color: 'rgba(255, 127, 0, 0.4)',
+			renderer: 'stack'
+		}, {
+			name: 'dewpoint',
+			data: seriesData.shift(),
+			color: 'rgba(127, 0, 0, 0.3)',
+			renderer: 'scatterplot'
+		}, {
+			name: 'pop',
+			data: seriesData.shift().map(function(d) {
+				return {
+					x: d.x,
+					y: d.y / 4
+				}
+			}),
+			color: 'rgba(0, 0, 127, 0.4)',
+			renderer: 'bar'
+		}, {
+			name: 'humidity',
+			data: seriesData.shift().map(function(d) {
+				return {
+					x: d.x,
+					y: d.y * 1.5
+				}
+			}),
+			renderer: 'line',
+			color: 'rgba(0, 0, 127, 0.25)'
+		}]
+	}
 };
 
 function graphReducer(_state = initialstate, action = null) {
+	console.log('graphReducer', _state);
 	let state = deepClone(_state);
 	switch (action.type) {
 	case 'DATA_CHANGED':
+		return state;
+	case 'HOVER_DATA':
 		return state;
 	case 'RESET':
 		return initialstate;
@@ -142,21 +147,20 @@ function graphReducer(_state = initialstate, action = null) {
 	}
 }
 
-const store = Redux.createStore(graphReducer);
-const Provider = ReactRedux.Provider;
 </script>
 
 
 <script type="text/babel">
-
-class App extends React.Component {
+class GraphContainer extends React.Component {
 	componentWillMount(){
-		initialstate.element =  document.createElement('div');
-		this.graph = new Rickshaw.Graph(initialstate);
+		console.log('this.props', this.props);
+		this.props.graph.element =  document.createElement('div');
+		this.graph = new Rickshaw.Graph(this.props.graph);
 		console.log('component will mount', this.graph)
 	}
-	componentDidMount(){
+	componentDidMount() {
 		console.log('component did mount')
+		this.graph.update();
 	}
 	render() {
 		return (
@@ -170,7 +174,28 @@ class App extends React.Component {
 			);
 	}
 }
-window.App = App;
+
+const mapStateToProps = state => {
+  return {
+    graph: state.graph
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    hoverDataPoint: id => {
+      dispatch({
+		    type: 'HOVER_DATA',
+		    id
+		  })
+    }
+  }
+}
+
+window.GraphContainer = ReactRedux.connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(GraphContainer)
 </script>
 
 <script type="text/babel">
@@ -250,8 +275,13 @@ window.Legend = Legend;
 
 <script type="text/babel">
 
+const store = Redux.createStore(graphReducer);
+const Provider = ReactRedux.Provider;
+
 ReactDOM.render(
-	<App graph="Placeholder"/>,
+	<Provider store={store}>
+		<GraphContainer />
+  </Provider>,
 	document.getElementById('app')
 );
 
