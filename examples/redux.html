@@ -1,17 +1,28 @@
 <!doctype html>
 <head>
-<link type="text/css" rel="stylesheet" href="../rickshaw.css">
-<link type="text/css" rel="stylesheet" href="css/lines.css">
-<script src="../vendor/d3.v3.js"></script>
+	<meta charset="utf-8">
 
-<script src="../rickshaw.js"></script>
-<style>
+	<link type="text/css" rel="stylesheet" href="../rickshaw.css">
+	<link type="text/css" rel="stylesheet" href="css/lines.css">
+
+	<script src="../vendor/d3.v3.js"></script>
+	<script src="../rickshaw.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react-dom.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/react-redux/5.0.5/react-redux.js"></script>
+
+	<style>
 	.column { display: inline-block }
-	#legend { background: white }
-	#legend .line { color: #333 }
-</style>
+	.legend { background: white }
+	.legend .line { color: #333 }
+	</style>
 </head>
+
 <body>
+
+<div id="app">
+</div>
 
 <div class="column">
 	<div id="chart"></div>
@@ -19,16 +30,32 @@
 </div>
 <div class="column" id="legend"></div>
 
+
 <script>
-var seriesData = [ [], [], [], [], [] ];
-var random = new Rickshaw.Fixtures.RandomData(50);
+// deep cloning function excerpted from underscore.js
+function deepClone (obj) {
+	if(obj == null || typeof(obj) != 'object') {
+		return obj;
+	}
+	const temp = new obj.constructor();
+	for(let key in obj) {
+		if (obj.hasOwnProperty(key)) {
+			temp[key] = deepClone(obj[key]);
+		}
+	}
+	return temp;
+};
+</script>
+
+<script>
+const seriesData = [ [], [], [], [], [] ];
+const random = new Rickshaw.Fixtures.RandomData(50);
 
 for (var i = 0; i < 75; i++) {
 	random.addData(seriesData);
 }
 
-var graph = new Rickshaw.Graph({
-	element: document.getElementById("chart"),
+const initialstate = {
 	renderer: 'multi',
 	width: 900,
 	height: 500,
@@ -69,36 +96,113 @@ var graph = new Rickshaw.Graph({
 		renderer: 'line',
 		color: 'rgba(0, 0, 127, 0.25)'
 	}]
-});
+};
 
-var slider = new Rickshaw.Graph.RangeSlider.Preview({
-	graph: graph,
-	element: document.querySelector('#slider')
-});
-
-graph.render();
-
-var detail = new Rickshaw.Graph.HoverDetail({
-	graph: graph
-});
-
-var legend = new Rickshaw.Graph.Legend({
-	graph: graph,
-	element: document.querySelector('#legend')
-});
-
-var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
-	graph: graph,
-	legend: legend,
-	disabledColor: function() {
-		return 'rgba(0, 0, 0, 0.2)'
+function graphReducer(_state = initialstate, action = null) {
+	let state = deepClone(_state); // deepClone == clone
+	switch (action.type) {
+	case 'DATA_CHANGED':
+		return state;
+	case 'RESET':
+		return initialstate;
+	default:
+		return _state;
 	}
-});
+}
 
-var highlighter = new Rickshaw.Graph.Behavior.Series.Toggle({
-	graph: graph,
-	legend: legend
-});
+const store = Redux.createStore(graphReducer);
 
+const Provider = ReactRedux.Provider;
+
+class App extends React.Component {
+	render() {
+		return React.createElement('div', {}, [
+			React.createElement('div', {
+				className: "column",
+				key: 'row1'
+			}, [
+				React.createElement(Graph, {
+					key: 'chart',
+					id: 'chart'
+				}, `Graph ${this.props.graph}`),
+				React.createElement('Slider', {
+					key: 'slider'
+				}, `Slider ${this.props.graph}`)
+			]),
+			React.createElement('Legend', {
+				className: "column legend",
+				key: 'row2'
+			}, `Legend ${this.props.graph}`),
+		]);
+	}
+}
 </script>
+
+<script>
+class Slider extends React.Component {
+	render() {
+		var slider = new Rickshaw.Graph.RangeSlider.Preview({
+			graph: graph,
+			element: document.querySelector('#slider')
+		});
+
+		return React.createElement('div', null, `Slider ${this.props.graph}`);
+	}
+}
+</script>
+
+<script>
+class Graph extends React.Component {
+	render() {
+		initialstate.element =  document.getElementById('chart');
+		var graph = new Rickshaw.Graph(initialstate);
+
+		var detail = new Rickshaw.Graph.HoverDetail({
+			graph: graph
+		});
+
+		var legend = new Rickshaw.Graph.Legend({
+			graph: graph,
+			element: document.getElementById('legend')
+		});
+
+		var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
+			graph: graph,
+			legend: legend,
+			disabledColor: function() {
+				return 'rgba(0, 0, 0, 0.2)'
+			}
+		});
+
+		var highlighter = new Rickshaw.Graph.Behavior.Series.Toggle({
+			graph: graph,
+			legend: legend
+		});
+
+		graph.render();
+
+
+		return React.createElement('div', null, `Graph  ${this.props.graph}`);
+	}
+}
+</script>
+
+<script>
+class Legend extends React.Component {
+	render() {
+		return React.createElement('div', null, `Legend ${this.props.graph}`);
+	}
+}
+</script>
+
+<script>
+ReactDOM.render(
+	React.createElement(App, {
+		graph: 'Placeholder'
+	}, null),
+	document.getElementById('app')
+);
+</script>
+
 </body>
+</html>
