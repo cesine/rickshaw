@@ -73,7 +73,7 @@ Rickshaw.Graph = function(args) {
 			if (!Array.isArray(s.data)) {
 				throw "series data is not an array: " + JSON.stringify(s.data);
 			}
-			
+
 			if (s.data.length > 0) {
 				var x = s.data[0].x;
 				var y = s.data[0].y;
@@ -305,7 +305,7 @@ Rickshaw.Graph = function(args) {
 		args = args || {};
 
 		if (typeof window !== 'undefined') {
-			var style = window.getComputedStyle(this.element, null);
+			var style = this.element.style;
 			var elementWidth = parseInt(style.getPropertyValue('width'), 10);
 			var elementHeight = parseInt(style.getPropertyValue('height'), 10);
 		}
