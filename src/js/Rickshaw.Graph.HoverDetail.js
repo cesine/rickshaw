@@ -14,11 +14,13 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			return y === null ? y : y.toFixed(2);
 		};
 
-		var element = this.element = document.createElement('div');
+		var element = this.element = args.element || document.createElement('div');
 		element.className = 'detail inactive';
 
 		this.visible = true;
-		graph.element.appendChild(element);
+		if (!args.element) {
+			graph.element.appendChild(element);
+		}
 
 		this.lastEvent = null;
 		this._addListeners();
