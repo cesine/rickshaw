@@ -60,7 +60,7 @@ exports.year = function(test) {
 
 	var ceil = time.ceil(year2013 + 1, time.unit('year'));
 
-	test.equal(ceil, year2014, "midnight new year plus a bit resolves to next year");
+	test.equal(ceil, year2014, "midnight new year " +  new Date(ceil * 1000) + " plus a bit resolves to next year: " + new Date(year2014 * 1000));
 	test.done();
 };
 
