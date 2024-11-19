@@ -82,7 +82,7 @@ Rickshaw.Fixtures.Time.Local = function() {
 
 			var nearFuture = new Date((time + unit.seconds - 1) * 1000);
 
-			var rounded = new Date(0);
+			var rounded = new Date(Date.UTC(0));
 			rounded.setFullYear(nearFuture.getFullYear());
 			rounded.setMonth(nearFuture.getMonth());
 			rounded.setDate(nearFuture.getDate());
