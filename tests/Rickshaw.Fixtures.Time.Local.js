@@ -46,17 +46,16 @@ exports.decemberMonthWrap = function(test) {
 
 exports.yearBoundary = function(test) {
 
-	var year2013 = 1357016400;
+	var year2013 = new Date('2013-01-01T05:00:00.000Z').getTime() / 1000;
 	var ceil = time.ceil(year2013, time.unit('year'));
 
-	test.equal(ceil, year2013, "midnight new year resolves to itself");
+	test.equal(ceil, year2013, "midnight new year " +  new Date(ceil * 1000) + " resolves to itself: " + new Date(year2013 * 1000));
 	test.done();
 };
 
 exports.year = function(test) {
-
-	var year2013 = 1357016400;
-	var year2014 = 1388552400;
+	var year2013 = new Date('2013-01-01T05:00:00.000Z').getTime() / 1000;
+	var year2014 = new Date('2014-01-01T05:00:00.000Z').getTime() / 1000;
 
 	var ceil = time.ceil(year2013 + 1, time.unit('year'));
 
