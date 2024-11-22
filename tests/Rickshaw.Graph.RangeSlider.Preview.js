@@ -1,55 +1,58 @@
-var d3 = require("d3");
+import jsdom from 'jsdom';
+import { expect } from 'chai';
+import d3 from 'd3';
+import { Rickshaw } from 'rickshaw';;
 
-exports.setUp = function(callback) {
+describe('Rickshaw.Graph.RangeSlider.Preview', () => {
+  beforeEach((done) => {
+    jsdom.env({
+      html: '<html><head></head><body></body></html>',
+      done: (errors, window) => {
+        global.document = window.document;
+        global.window = window;
+        new Rickshaw.Compat.ClassList();
+        done();
+      }
+    });
+  });
 
-	Rickshaw = require('../rickshaw');
+  afterEach(() => {
+    delete global.document;
+    delete global.window;
+  });
 
-	global.document = require("jsdom").jsdom("<html><head></head><body></body></html>");
-	global.window = document.defaultView;
+  it('should initialize correctly', () => {
+    const el = document.createElement("div");
 
-	new Rickshaw.Compat.ClassList();
+    const graph = new Rickshaw.Graph({
+      element: el,
+      width: 960,
+      height: 500,
+      renderer: 'scatterplot',
+      series: [{
+        color: 'steelblue',
+        data: [
+          { x: 0, y: 40 },
+          { x: 1, y: 49 },
+          { x: 2, y: 38 },
+          { x: 3, y: 30 },
+          { x: 4, y: 32 }
+        ]
+      }]
+    });
 
-	callback();
-};
+    graph.renderer.dotSize = 6;
+    graph.render();
 
-exports.tearDown = function(callback) {
+    const previewElement = document.createElement("div");
 
-	delete require.cache.d3;
-	callback();
-};
+    const preview = new Rickshaw.Graph.RangeSlider.Preview({
+      element: previewElement,
+      graph: graph
+    });
 
-exports.basic = function(test) {
-
-	var el = document.createElement("div");
-
-	var graph = new Rickshaw.Graph({
-		element  : el,
-		width    : 960,
-		height   : 500,
-		renderer : 'scatterplot',
-		series   : [{
-			color : 'steelblue',
-			data  : [
-				{ x: 0, y: 40 },
-				{ x: 1, y: 49 },
-				{ x: 2, y: 38 },
-				{ x: 3, y: 30 },
-				{ x: 4, y: 32 } ]
-			}]
-	} );
-
-	graph.renderer.dotSize = 6;
-	graph.render();
-
-	var previewElement = document.createElement("div");
-
-	var preview = new Rickshaw.Graph.RangeSlider.Preview({
-		element: previewElement,
-		graph: graph
-	});
-
-	test.equal(graph.renderer.name, preview.previews[0].renderer.name);
-	test.done();
-};
+    expect(graph.renderer.name).to.equal(preview.previews[0].renderer.name);
+  });
+});
 
 

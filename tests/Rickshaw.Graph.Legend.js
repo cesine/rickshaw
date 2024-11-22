@@ -1,123 +1,115 @@
-var d3 = require("d3");
-var Rickshaw;
+import jsdom from 'jsdom';
+import { expect } from 'chai';
+import d3 from 'd3';
+import { Rickshaw } from 'rickshaw';;
 
-exports.setUp = function(callback) {
+describe('Rickshaw.Graph.Legend', () => {
+  let graph;
+  let legendEl;
 
-	Rickshaw = require('../rickshaw');
+  beforeEach((done) => {
+    jsdom.env({
+      html: '<html><head></head><body></body></html>',
+      done: (errors, window) => {
+        global.document = window.document;
+        global.window = window;
+        new Rickshaw.Compat.ClassList();
 
-	global.document = require("jsdom").jsdom("<html><head></head><body></body></html>");
-	global.window = document.defaultView;
+        const el = document.createElement("div");
+        graph = new Rickshaw.Graph({
+          element: el,
+          width: 960,
+          height: 500,
+          renderer: 'stack',
+          series: [
+            {
+              name: 'foo',
+              color: 'green',
+              stroke: 'red',
+              data: [{ x: 4, y: 32 }]
+            },
+            {
+              name: 'bar',
+              data: [{ x: 4, y: 32 }]
+            }
+          ]
+        });
+        legendEl = document.createElement("div");
+        done();
+      }
+    });
+  });
 
-	new Rickshaw.Compat.ClassList();
+  afterEach(() => {
+    delete global.document;
+    delete global.window;
+  });
 
-	var el = document.createElement("div");
-	this.graph = new Rickshaw.Graph({
-		element: el,
-		width: 960,
-		height: 500,
-		renderer: 'stack',
-		series: [
-			{
-				name: 'foo',
-				color: 'green',
-				stroke: 'red',
-				data: [
-					{ x: 4, y: 32 }
-				]
-			},
-			{
-				name: 'bar',
-				data: [
-					{ x: 4, y: 32 }
-				]
-			}
-		]
-	});
-	this.legendEl = document.createElement("div");
+  it('should render legend correctly', () => {
+    const legend = new Rickshaw.Graph.Legend({
+      graph: graph,
+      element: legendEl
+    });
 
+    const items = legendEl.getElementsByTagName('li');
+    expect(items.length).to.equal(2, "legend count");
+    expect(items[1].getElementsByClassName('label')[0].innerHTML).to.equal("foo");
+    expect(items[0].getElementsByClassName('label')[0].innerHTML).to.equal("bar");
+  });
 
-	callback();
-};
+  it('should have default className', () => {
+    const legend = new Rickshaw.Graph.Legend({
+      graph: graph,
+      element: legendEl
+    });
 
-exports.tearDown = function(callback) {
+    expect(legendEl.className).to.equal("rickshaw_legend");
+  });
 
-	delete require.cache.d3;
-	callback();
-};
+  it('should allow overriding className', () => {
+    const MyLegend = Rickshaw.Class.create(Rickshaw.Graph.Legend, {
+      className: 'fnord'
+    });
+    const legend = new MyLegend({
+      graph: graph,
+      element: legendEl
+    });
 
-exports.rendersLegend = function(test) {
-	var legend = new Rickshaw.Graph.Legend({
-		graph: this.graph,
-		element: this.legendEl
-	});
+    expect(legendEl.className).to.equal("fnord");
+  });
 
-	var items = this.legendEl.getElementsByTagName('li')
-	test.equal(items.length, 2, "legend count")
-	test.equal(items[1].getElementsByClassName('label')[0].innerHTML, "foo")
-	test.equal(items[0].getElementsByClassName('label')[0].innerHTML, "bar")
+  it('should have default colorKey', () => {
+    const legend = new Rickshaw.Graph.Legend({
+      graph: graph,
+      element: legendEl
+    });
 
-	test.done();
+    expect(legend.colorKey).to.equal("color");
+    expect(legendEl.getElementsByClassName('swatch')[1].style.backgroundColor).to.equal("green");
+  });
 
-};
+  it('should allow overriding colorKey', () => {
+    const legend = new Rickshaw.Graph.Legend({
+      graph: graph,
+      element: legendEl,
+      colorKey: 'stroke'
+    });
 
-exports.hasDefaultClassName = function(test) {
-	var legend = new Rickshaw.Graph.Legend({
-		graph: this.graph,
-		element: this.legendEl
-	});
+    expect(legend.colorKey).to.equal("stroke");
+    expect(legendEl.getElementsByClassName('swatch')[1].style.backgroundColor).to.equal("red");
+  });
 
-	test.equal(this.legendEl.className, "rickshaw_legend")
-	test.done();
-};
+  it('should put series classes on legend elements', () => {
+    graph.series[0].className = 'fnord-series-0';
+    graph.series[1].className = 'fnord-series-1';
 
-exports.canOverrideClassName = function(test) {
-	var MyLegend = Rickshaw.Class.create( Rickshaw.Graph.Legend, {
-		className: 'fnord'
-	});
-	var legend = new MyLegend({
-		graph: this.graph,
-		element: this.legendEl
-	});
-	
-	test.equal(this.legendEl.className, "fnord")
-	test.done();
-};
+    const legend = new Rickshaw.Graph.Legend({
+      graph: graph,
+      element: legendEl
+    });
 
-exports.hasDefaultColorKey = function(test) {
-	var legend = new Rickshaw.Graph.Legend({
-		graph: this.graph,
-		element: this.legendEl
-	});
-
-
-	test.equal(legend.colorKey, "color");
-	test.equal(this.legendEl.getElementsByClassName('swatch')[1].style.backgroundColor, "green");
-	test.done();
-};
-
-exports.canOverrideColorKey = function(test) {
-	var legend = new Rickshaw.Graph.Legend({
-		graph: this.graph,
-		element: this.legendEl,
-		colorKey: 'stroke'
-	});
-
-
-	test.equal(legend.colorKey, "stroke");
-	test.equal(this.legendEl.getElementsByClassName('swatch')[1].style.backgroundColor, "red");
-	test.done();
-};
-
-exports['should put series classes on legend elements'] = function(test) {
-	this.graph.series[0].className = 'fnord-series-0';
-	this.graph.series[1].className = 'fnord-series-1';
-	
-	var legend = new Rickshaw.Graph.Legend({
-		graph: this.graph,
-		element: this.legendEl
-	});
-	test.equal(d3.select(this.legendEl).selectAll('.line').size(), 2);
-	test.equal(d3.select(this.legendEl).selectAll('.fnord-series-0').size(), 1);
-	test.equal(d3.select(this.legendEl).selectAll('.fnord-series-1').size(), 1);
-	test.done();
-};
+    expect(d3.select(legendEl).selectAll('.line').size()).to.equal(2);
+    expect(d3.select(legendEl).selectAll('.fnord-series-0').size()).to.equal(1);
+    expect(d3.select(legendEl).selectAll('.fnord-series-1').size()).to.equal(1);
+  });
+});

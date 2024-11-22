@@ -1,125 +1,110 @@
-var d3 = require('d3');
-var jsdom = require('jsdom').jsdom;
+import jsdom from 'jsdom';
+import { expect } from 'chai';
+import d3 from 'd3';
+import { Rickshaw } from 'rickshaw';;
 
-var Rickshaw = require('../rickshaw');
+describe('Rickshaw.Graph.Annotate', () => {
+  beforeEach((done) => {
+    jsdom.env({
+      html: '<html><head></head><body></body></html>',
+      done: (errors, window) => {
+        global.document = window.document;
+        global.window = window;
+        global.Node = {};
+        new Rickshaw.Compat.ClassList();
+        done();
+      }
+    });
+  });
 
-exports.setUp = function(callback) {
+  afterEach(() => {
+    delete global.document;
+    delete global.window;
+    delete global.Node;
+  });
 
-  global.document = jsdom('<html><head></head><body></body></html>');
-  global.window = document.defaultView;
-  global.Node = {};
+  it('should initialize correctly', () => {
+    const element = document.createElement('div');
+    const annotateElement = document.createElement('div');
 
-  new Rickshaw.Compat.ClassList();
-
-  callback();
-};
-
-exports.tearDown = function(callback) {
-
-  delete require.cache.d3;
-  callback();
-};
-
-exports.initialize = function(test) {
-
-  var element = document.createElement('div');
-  var annotateElement = document.createElement('div');
-
-  var graph = new Rickshaw.Graph({
-    width: 900,
-    element: element,
-    series: [{
-      data: [{
-        x: 4,
-        y: 32
-      }, {
-        x: 16,
-        y: 100
+    const graph = new Rickshaw.Graph({
+      width: 900,
+      element: element,
+      series: [{
+        data: [{ x: 4, y: 32 }, { x: 16, y: 100 }]
       }]
-    }]
+    });
+
+    const annotate = new Rickshaw.Graph.Annotate({
+      graph: graph,
+      element: annotateElement
+    });
+
+    expect(annotate.elements.timeline).to.equal(annotateElement);
+    const timeline = d3.select(element).selectAll('.rickshaw_annotation_timeline');
+    expect(annotate.element).to.equal(timeline[0][0]);
   });
 
-  var annotate = new Rickshaw.Graph.Annotate({
-    graph: graph,
-    element: annotateElement
+  it('should add annotations correctly', () => {
+    const element = document.createElement('div');
+    const annotateElement = document.createElement('div');
+
+    const graph = new Rickshaw.Graph({
+      element: element,
+      series: []
+    });
+
+    const annotate = new Rickshaw.Graph.Annotate({
+      graph: graph,
+      element: annotateElement
+    });
+
+    const time = Date.now();
+    annotate.add(time, 'foo', time + 10 * 1000);
+
+    expect(annotate.data[time]).to.deep.equal({
+      boxes: [{
+        content: 'foo',
+        end: time + 10 * 1000
+      }]
+    });
   });
 
-  test.equal(annotate.elements.timeline, annotateElement);
-  var timeline = d3.select(element).selectAll('.rickshaw_annotation_timeline');
-  test.equal(annotate.element, timeline[0][0]);
+  it('should update annotations correctly', () => {
+    const element = document.createElement('div');
+    const annotateElement = document.createElement('div');
 
-  test.done();
-};
+    const graph = new Rickshaw.Graph({
+      element: element,
+      series: []
+    });
 
-exports.add = function(test) {
+    const annotate = new Rickshaw.Graph.Annotate({
+      graph: graph,
+      element: annotateElement
+    });
 
-  var element = document.createElement('div');
-  var annotateElement = document.createElement('div');
+    const time = 3000;
+    annotate.add(time, 'foo', time + 10 * 1000);
+    annotate.update();
 
-  var graph = new Rickshaw.Graph({
-    element: element,
-    series: []
+    const clickEvent = document.createEvent('Event');
+    clickEvent.initEvent('click', true, true);
+    const addedElement = d3.select(annotateElement).selectAll('.annotation')[0][0];
+    addedElement.dispatchEvent(clickEvent);
+
+    expect(addedElement.classList.contains('active')).to.be.true;
+
+    annotate.graph.onUpdate();
+    annotate.update();
+
+    expect(addedElement.style._values).to.deep.equal({
+      display: 'block'
+    });
+
+    expect(annotate.data[time].element.classList).to.deep.equal({
+      '0': 'annotation',
+      '1': 'active'
+    });
   });
-
-  var annotate = new Rickshaw.Graph.Annotate({
-    graph: graph,
-    element: annotateElement
-  });
-
-  var time = Date.now();
-  annotate.add(time, 'foo', time + 10 * 1000);
-
-  test.deepEqual(annotate.data[time], {
-    boxes: [{
-      content: 'foo',
-      end: time + 10 * 1000
-    }]
-  });
-
-  test.done();
-};
-
-exports.update = function(test) {
-
-  var element = document.createElement('div');
-  var annotateElement = document.createElement('div');
-
-  var graph = new Rickshaw.Graph({
-    element: element,
-    series: []
-  });
-
-  var annotate = new Rickshaw.Graph.Annotate({
-    graph: graph,
-    element: annotateElement
-  });
-
-  var time = 3000;
-  annotate.add(time, 'foo', time + 10 * 1000);
-
-  annotate.update();
-
-  var clickEvent = global.document.createEvent('Event');
-  clickEvent.initEvent('click', true, true);
-  var addedElement = d3.select(annotateElement).selectAll('.annotation')[0][0];
-  addedElement.dispatchEvent(clickEvent);
-
-  test.deepEqual(addedElement.classList, {
-    '0': 'annotation',
-    '1': 'active'
-  });
-
-  annotate.graph.onUpdate();
-  annotate.update();
-
-  test.deepEqual(addedElement.style._values, {
-    display: 'block'
-  });
-
-  test.deepEqual(annotate.data[time].element.classList, {
-    '0': 'annotation',
-    '1': 'active'
-  });
-
-  test.done();
-};
+});

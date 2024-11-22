@@ -1,8 +1,9 @@
-var Rickshaw = require('../rickshaw');
-var package = require('../package.json');
+import { expect } from 'chai';
+import { Rickshaw } from 'rickshaw';;
+import pkg from '../package.json';
 
-exports.load = function(test) {
-
-  test.equal(Rickshaw.version, package.version, 'Rickshaw.version is defined');
-  test.done();
-};
+describe('Rickshaw', () => {
+  it('should have correct version', () => {
+    expect(Rickshaw.version).to.equal(pkg.version, 'Rickshaw.version is defined');
+  });
+});

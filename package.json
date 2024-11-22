@@ -20,29 +20,40 @@
     "svg"
   ],
   "license": "MIT",
-  "main": "./rickshaw",
+  "main": "./rickshaw.js",
+  "module": "./rickshaw.mjs",
+  "exports": {
+    ".": {
+      "import": "./rickshaw.mjs",
+      "require": "./rickshaw.js"
+    }
+  },
+  "type": "commonjs",
   "engines": {
     "node": ">= 4.0.0"
   },
   "devDependencies": {
+    "chai": "^4.0.0",
     "clean-css-cli": "^4.3.0",
     "coveralls": "^2.11.9",
-    "istanbul": "^0.4.3",
     "jquery": "^3.2.1",
-    "jsdom": "^8.1.0",
+    "jsdom": "^11.1.0",
     "jshint": "^2.9.5",
+    "mocha": "^10.8.2",
     "nodemon": "^1.11.0",
     "nodeunit": "^0.9.1",
     "sinon": "^2.3.8",
-    "uglify-js": "^2.8.29"
+    "uglify-js": "^2.8.29",
+    "nyc": "^15.1.0"
   },
   "scripts": {
     "build": "make clean && make",
     "examples": "open examples/index.html",
     "lint": "jshint src/js/*",
-    "test": "make && nodeunit tests",
+    "test": "make && mocha tests/**/*.mjs",
     "watch": "nodemon --watch src --exec make rickshaw.js",
-    "coverage": "istanbul cover nodeunit tests --reporter=lcov",
+    "coverage": "make && nyc mocha tests/**/*.mjs",
+    "coverage:report": "nyc report --reporter=lcov --reporter=text",
     "coveralls": "cat ./coverage/lcov.info | coveralls",
     "preversion:src": "sed \"s/version: '[^,]*'/version: '$npm_package_version'/\" src/js/Rickshaw.js  > output &&  mv output src/js/Rickshaw.js",
     "preversion:bower": "sed 's/\"version\": \"[^,]*\"/\"version\": \"'$npm_package_version'\"/' bower.json  > output &&  mv output bower.json",
@@ -141,5 +152,21 @@
     "deldrid1 <deldrid1@utk.edu>",
     "Kyle <kyle.j.conroy@gmail.com>",
     "Maciej Winnicki <maciej.winnicki@gmail.com>"
-  ]
+  ],
+  "nyc": {
+    "exclude": [
+      "tests/**/*.js",
+      "coverage/**/*.js"
+    ],
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "all": true,
+    "check-coverage": true,
+    "branches": 52,
+    "lines": 62,
+    "functions": 53,
+    "statements": 61
+  }
 }

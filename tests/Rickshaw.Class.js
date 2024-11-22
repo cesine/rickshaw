@@ -1,52 +1,47 @@
-var Rickshaw = require('../rickshaw');
+import { expect } from 'chai';
+import { Rickshaw } from 'rickshaw';;
 
-exports.load = function(test) {
-
-	test.equal(typeof Rickshaw.Class, 'object', 'Rickshaw.Class is a function');
-	test.done();
-};
-
-exports.instantiation = function(test) {
-
-	Rickshaw.namespace('Rickshaw.Sample.Class');
-
-	Rickshaw.Sample.Class = Rickshaw.Class.create({
-		name: 'sample',
-		concat: function(suffix) {
-			return [this.name, suffix].join(' ');
-		}
+describe('Rickshaw.Class', () => {
+	it('should load Rickshaw.Class as an object', () => {
+		expect(typeof Rickshaw.Class).to.equal('object');
 	});
 
-	var sample = new Rickshaw.Sample.Class();
-	test.equal(sample.concat('polka'), 'sample polka');
+	it('should handle class instantiation and inheritance', () => {
+		Rickshaw.namespace('Rickshaw.Sample.Class');
 
-	Rickshaw.namespace('Rickshaw.Sample.Class.Prefix');
+		Rickshaw.Sample.Class = Rickshaw.Class.create({
+			name: 'sample',
+			concat: function(suffix) {
+				return [this.name, suffix].join(' ');
+			}
+		});
 
-	Rickshaw.Sample.Subclass = Rickshaw.Class.create( Rickshaw.Sample.Class, {
-		name: 'sampler'
+		const sample = new Rickshaw.Sample.Class();
+		expect(sample.concat('polka')).to.equal('sample polka');
+
+		Rickshaw.namespace('Rickshaw.Sample.Class.Prefix');
+
+		Rickshaw.Sample.Subclass = Rickshaw.Class.create(Rickshaw.Sample.Class, {
+			name: 'sampler'
+		});
+
+		const sampler = new Rickshaw.Sample.Subclass();
+		expect(sampler.concat('polka')).to.equal('sampler polka');
 	});
 
-	var sampler = new Rickshaw.Sample.Subclass();
-	test.equal(sampler.concat('polka'), 'sampler polka');
+	it('should handle array inheritance', () => {
+		Rickshaw.namespace('Rickshaw.Sample.Array');
 
-	test.done();
-};
+		Rickshaw.Sample.Array = Rickshaw.Class.create(Array, {
+			second: function() {
+				return this[1];
+			}
+		});
 
-exports.array = function(test) {
+		const array = new Rickshaw.Sample.Array();
+		array.push('red');
+		array.push('blue');
 
-	Rickshaw.namespace('Rickshaw.Sample.Array');
-
-	Rickshaw.Sample.Array = Rickshaw.Class.create(Array, {
-		second: function() {
-			return this[1];
-		}
+		expect(array.second()).to.equal('blue');
 	});
-
-	var array = new Rickshaw.Sample.Array();
-	array.push('red');
-	array.push('blue');
-
-	test.equal(array.second(), 'blue');
-
-	test.done();
-};
+});

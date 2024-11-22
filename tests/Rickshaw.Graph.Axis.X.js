@@ -1,45 +1,40 @@
-var d3 = require("d3");
-var Rickshaw;
+import jsdom from 'jsdom';
+import { expect } from 'chai';
+import d3 from 'd3';
+import { Rickshaw } from 'rickshaw';;
 
-exports.setUp = function(callback) {
+describe('Rickshaw.Graph.Axis.X', () => {
 
-	Rickshaw = require('../rickshaw');
+  beforeEach((done) => {
+    jsdom.env({
+      html: '<!DOCTYPE html>',
+      done: (errors, window) => {
+        global.document = window.document;
+        global.window = window;
+        done();
+      }
+    });
+  });
 
-	global.document = require("jsdom").jsdom("<html><head></head><body></body></html>");
-	global.window = document.defaultView;
+  it('should render x-axis with correct ticks', () => {
+    const element = window.document.createElement('div');
 
-	new Rickshaw.Compat.ClassList();
+    const graph = new Rickshaw.Graph({
+      width: 900,
+      element: element,
+      series: [{ data: [{ x: 4, y: 32 }, { x: 16, y: 100 }] }]
+    });
 
-	callback();
-};
+    const xAxis = new Rickshaw.Graph.Axis.X({
+      graph: graph
+    });
 
-exports.tearDown = function(callback) {
+    xAxis.render();
 
-	delete require.cache.d3;
-	callback();
-};
+    const ticks = d3.select(element).selectAll('.x_grid_d3 .tick');
 
-exports.axis = function(test) {
-
-	var element = document.createElement('div');
-
-	var graph = new Rickshaw.Graph({
-		width: 900,
-		element: element,
-		series: [ { data: [ { x: 4, y: 32 }, { x: 16, y: 100 } ] } ]
-	});
-
-	var xAxis = new Rickshaw.Graph.Axis.X({
-		graph: graph
-	});
-
-	xAxis.render();
-
-	var ticks = d3.select(element).selectAll('.x_grid_d3 .tick')
-
-	test.equal(ticks[0].length, 13, "we have some ticks");
-	test.equal(ticks[0][0].getAttribute('data-x-value'), '4');
-
-	test.done();
-};
+    expect(ticks[0].length).to.equal(13);
+    expect(ticks[0][0].getAttribute('data-x-value')).to.equal('4');
+  });
+});
 

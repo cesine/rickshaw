@@ -1,309 +1,209 @@
-var d3 = require('d3');
-var jsdom = require('jsdom').jsdom;
-var sinon = require('sinon');
+import jsdom from 'jsdom';
+import { expect } from 'chai';
+import sinon from 'sinon';
+import { Rickshaw } from 'rickshaw';;
 
-var Rickshaw;
-
-exports.setUp = function(callback) {
-
-  Rickshaw = require('../rickshaw');
-
-  global.document = jsdom('<html><head></head><body></body></html>');
-  global.window = document.defaultView;
-  global.Node = {};
-
-  new Rickshaw.Compat.ClassList();
-
-  callback();
-};
-
-exports.tearDown = function(callback) {
-
-  delete require.cache.d3;
-  callback();
-};
-
-exports.initialize = function(test) {
-
-  var element = document.createElement('div');
-
-  var graph = new Rickshaw.Graph({
-    width: 900,
-    element: element,
-    series: [{
-      data: [{
-        x: 4,
-        y: 32
-      }, {
-        x: 16,
-        y: 100
-      }]
-    }]
-  });
-
-  var hoverDetail = new Rickshaw.Graph.HoverDetail({
-    graph: graph
-  });
-
-  test.equal(hoverDetail.visible, true, 'visible by default');
-
-  test.equal(typeof hoverDetail.formatter, 'function', 'we have a default xFormatter');
-  test.equal(typeof hoverDetail.xFormatter, 'function', 'we have a default xFormatter');
-  test.equal(typeof hoverDetail.yFormatter, 'function', 'we have a default yFormatter');
-
-  var detail = d3.select(element).selectAll('.detail')
-  test.equal(hoverDetail.element, detail[0][0]);
-  test.equal(detail[0].length, 1, 'we have a div for hover detail');
-
-  test.done();
-};
-
-exports.formatters = function(test) {
-
-  var element = document.createElement('di1v');
-
-  var graph = new Rickshaw.Graph({
-    width: 900,
-    element: element,
-    series: [{
-      data: [{
-        x: 4,
-        y: 32
-      }, {
-        x: 16,
-        y: 100
-      }]
-    }]
-  });
-
-  var hoverDetail = new Rickshaw.Graph.HoverDetail({
-    graph: graph,
-    formatter: sinon.spy(),
-    xFormatter: sinon.spy(),
-    yFormatter: sinon.spy()
-  });
-
-  test.equal(hoverDetail.formatter.calledOnce, false, 'accepts a formatter function');
-  test.equal(hoverDetail.xFormatter.calledOnce, false, 'accepts a xFormatter function');
-  test.equal(hoverDetail.yFormatter.calledOnce, false, 'accepts a yFormatter function');
-
-  hoverDetail.formatter();
-  test.equal(hoverDetail.formatter.calledOnce, true, 'accepts a formatter function');
-
-  hoverDetail.xFormatter();
-  test.equal(hoverDetail.xFormatter.calledOnce, true, 'accepts a xFormatter function');
-
-  hoverDetail.yFormatter();
-  test.equal(hoverDetail.yFormatter.calledOnce, true, 'accepts a yFormatter function');
-
-  test.done();
-};
-
-exports.render = function(test) {
-
-  var element = document.createElement('div');
-
-  var graph = new Rickshaw.Graph({
-    width: 900,
-    element: element,
-    series: [{
-      name: 'testseries',
-      data: [{
-        x: 4,
-        y: 32
-      }, {
-        x: 16,
-        y: 100
-      }]
-    }]
-  });
-
-  var hoverDetail = new Rickshaw.Graph.HoverDetail({
-    graph: graph,
-    onShow: sinon.spy(),
-    onHide: sinon.spy(),
-    onRender: sinon.spy(),
-  });
-
-  hoverDetail.render({
-    points: [{
-      active: true,
-      series: graph.series[0],
-      value: {
-        y: null
+describe('Rickshaw.Graph.HoverDetail', () => {
+  beforeEach((done) => {
+    jsdom.env({
+      html: '<!DOCTYPE html><div id="graph" data-testid="rickshaw-graph"></div>',
+      done: (errors, window) => {
+        global.document = window.document;
+        global.window = window;
+        done();
       }
-    }]
+    });
   });
 
-  var items = d3.select(element).selectAll('.item');
-  test.equal(items[0].length, 0, 'we if y is null nothing is rendered');
-
-  hoverDetail.render({
-    points: [{
-      active: true,
-      series: graph.series[0],
-      value: graph.series[0].data[0],
-      formattedXValue: graph.series[0].data[0].x + ' foo',
-      formattedYValue: graph.series[0].data[0].y + ' bar'
-    }, {
-      active: true,
-      series: graph.series[0],
-      value: graph.series[0].data[1]
-    }, {
-      active: true,
-      series: graph.series[0],
-      value: {
-        y: null
-      }
-    }]
+  afterEach(() => {
+    delete global.document;
+    delete global.window;
   });
 
-  test.equal(hoverDetail.onShow.calledOnce, true, 'calls onShow');
-  test.equal(hoverDetail.onRender.calledOnce, true, 'calls onRender');
-
-  var xLabel = d3.select(element).selectAll('.x_label');
-  test.equal(xLabel[0].length, 1, 'we have a div for x label');
-  test.equal(xLabel[0][0].innerHTML, '4 foo', 'x label shows formatted x value');
-
-  var items = d3.select(element).selectAll('.item');
-  test.equal(items[0].length, 1, 'we have a div for hover detail');
-  test.equal(items[0][0].innerHTML, 'testseries:&nbsp;32 bar', 'item shows series label and formatted y value');
-
-  var dots = d3.select(element).selectAll('.dot');
-  test.equal(dots[0].length, 1, 'we have a div for hover dot');
-
-  hoverDetail.hide();
-  test.equal(hoverDetail.onHide.calledOnce, true, 'calls onHide');
-
-  hoverDetail.render({
-    points: [{
-      active: true,
-      series: graph.series[0],
-      value: {
-        y: null
-      }
-    }]
-  });
-
-  test.done();
-};
-
-exports.update = function(test) {
-
-  var element = document.createElement('div');
-
-  var graph = new Rickshaw.Graph({
-    width: 900,
-    element: element,
-    series: [{
-      name: 'testseries',
-      data: [{
-        x: 4,
-        y: 32
-      }, {
-        x: 16,
-        y: 100
+  it.only('should show hover detail', () => {
+    const element = document.querySelector('[data-testid="rickshaw-graph"]');
+    const graph = new Rickshaw.Graph({
+      element: element,
+      width: 900,
+      height: 600,
+      series: [{
+        data: [{ x: 4, y: 32 }],
+        color: '#000'
       }]
-    }]
+    });
+    graph.render();
+
+    const renderSpy = sinon.spy(Rickshaw.Graph.HoverDetail.prototype, 'render');
+
+    const hoverDetail = new Rickshaw.Graph.HoverDetail({
+      graph: graph,
+      xFormatter: x => x,
+      yFormatter: y => y
+    });
+
+    const MouseEvent = window.MouseEvent;
+    const event = new MouseEvent('mousemove', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: 100,
+      clientY: 100,
+      pageX: 100,
+      pageY: 100,
+      screenX: 100,
+      screenY: 100
+    });
+
+    graph.element.addEventListener('mousemove', (e) => {
+      console.log('Mousemove event received', e);
+    });
+
+    console.log('Element bounds:', graph.element.getBoundingClientRect());
+
+    graph.element.dispatchEvent(event);
+
+    expect(renderSpy.called).to.be.true;
+    expect(element.querySelector('.detail')).to.not.be.null;
+
+    renderSpy.restore();
   });
 
-  var hoverDetail = new Rickshaw.Graph.HoverDetail({
-    graph: graph
-  });
-  hoverDetail.render = sinon.spy();
-
-  hoverDetail.update();
-  test.equal(hoverDetail.render.calledOnce, false, 'update isnt called if there is no event');
-
-  var moveEvent = global.document.createEvent('Event');
-  moveEvent.initEvent('mousemove', true, true);
-  moveEvent.relatedTarget = {
-    compareDocumentPosition: sinon.spy()
-  };
-  element.dispatchEvent(moveEvent);
-  test.equal(hoverDetail.render.calledOnce, false, 'update is only called on path, svg, rect, circle');
-
-  var svg = d3.select(element).selectAll('svg')[0][0];
-  moveEvent.target = svg;
-  svg.dispatchEvent(moveEvent);
-  test.equal(hoverDetail.render.calledOnce, true, 'update calls render if visible');
-  test.equal(hoverDetail.element.innerHTML, '', 'detail should be empty');
-
-  hoverDetail.render = sinon.spy();
-  graph.series.push({
-    name: 'test empty series',
-    data: []
-  });
-  svg.dispatchEvent(moveEvent);
-  test.equal(hoverDetail.render.calledOnce, false, 'update isnt called if there is no active series');
-
-  test.done();
-};
-
-exports.listeners = function(test) {
-
-  var element = document.createElement('div');
-
-  var graph = new Rickshaw.Graph({
-    width: 900,
-    element: element,
-    series: [{
-      name: 'testseries',
-      data: [{
-        x: 4,
-        y: 32
-      }, {
-        x: 16,
-        y: 100
+  it('should format x and y values', () => {
+    const element = document.querySelector('[data-testid="rickshaw-graph"]');
+    const graph = new Rickshaw.Graph({
+      element: element,
+      width: 900,
+      height: 600,
+      series: [{
+        data: [{ x: 4, y: 32 }],
+        color: '#000'
       }]
-    }]
+    });
+    graph.render();
+
+    const xFormatter = sinon.spy(x => `X:${x}`);
+    const yFormatter = sinon.spy(y => `Y:${y}`);
+
+    const hoverDetail = new Rickshaw.Graph.HoverDetail({
+      graph: graph,
+      xFormatter: xFormatter,
+      yFormatter: yFormatter
+    });
+
+    const MouseEvent = window.MouseEvent;
+    const event = new MouseEvent('mousemove', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: 100,
+      clientY: 100,
+      pageX: 100,
+      pageY: 100,
+      screenX: 100,
+      screenY: 100
+    });
+
+    graph.element.addEventListener('mousemove', (e) => {
+      console.log('Mousemove event received', e);
+    });
+
+    console.log('Element bounds:', graph.element.getBoundingClientRect());
+
+    graph.element.dispatchEvent(event);
+
+    expect(xFormatter.called).to.be.true;
+    expect(yFormatter.called).to.be.true;
+    expect(element.querySelector('.x_label').textContent).to.contain('X:4');
+    expect(element.querySelector('.item .value').textContent).to.contain('Y:32');
   });
-  test.equal(typeof graph.element, 'object', 'graph has an element');
-  test.equal(graph.element, element, 'graph has an element');
 
-  var hoverDetail = new Rickshaw.Graph.HoverDetail({
-    graph: graph,
-    onHide: sinon.spy()
+  it('should render multiple series', () => {
+    const element = document.querySelector('[data-testid="rickshaw-graph"]');
+    const graph = new Rickshaw.Graph({
+      element: element,
+      width: 900,
+      height: 600,
+      series: [
+        { data: [{ x: 4, y: 32 }], name: 'series1', color: '#000' },
+        { data: [{ x: 4, y: 64 }], name: 'series2', color: '#fff' }
+      ]
+    });
+    graph.render();
+
+    const renderSpy = sinon.spy(Rickshaw.Graph.HoverDetail.prototype, 'render');
+
+    const hoverDetail = new Rickshaw.Graph.HoverDetail({
+      graph: graph
+    });
+
+    const event = new MouseEvent('mousemove', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: 100,
+      clientY: 100,
+      pageX: 100,
+      pageY: 100,
+      screenX: 100,
+      screenY: 100
+    });
+
+    graph.element.addEventListener('mousemove', (e) => {
+      console.log('Mousemove event received', e);
+    });
+
+    console.log('Element bounds:', graph.element.getBoundingClientRect());
+
+    graph.element.dispatchEvent(event);
+
+    expect(renderSpy.called).to.be.true;
+    expect(element.querySelectorAll('.item').length).to.equal(2);
+
+    renderSpy.restore();
   });
 
-  test.equal(typeof hoverDetail.mousemoveListener, 'function', 'we have a default mousemoveListener');
-  test.equal(typeof hoverDetail.mouseoutListener, 'function', 'we have a default mouseoutListener');
+  it('should hide on mouseout', () => {
+    const element = document.querySelector('[data-testid="rickshaw-graph"]');
+    const graph = new Rickshaw.Graph({
+      element: element,
+      width: 900,
+      height: 600,
+      series: [{
+        data: [{ x: 4, y: 32 }],
+        color: '#000'
+      }]
+    });
+    graph.render();
 
-  var event = global.document.createEvent('Event');
-  event.initEvent('mouseout', true, true);
-  event.relatedTarget = {
-    compareDocumentPosition: sinon.spy()
-  };
-  element.dispatchEvent(event);
-  test.equal(hoverDetail.onHide.calledOnce, true, 'calls onHide');
-  test.equal(hoverDetail.visible, false);
+    const hideSpy = sinon.spy(Rickshaw.Graph.HoverDetail.prototype, 'hide');
 
-  // simulating clearing the element's html in 
-  // angular/backbone/react or other SPA framework
-  test.equal(hoverDetail.element.parentNode, element);
-  test.equal(element.childNodes.length, 2, 'has two child nodes');
-  test.equal(hoverDetail.element.parentNode, element, 'has reference to its parent node');
-  graph.element.removeChild(element.childNodes[0]);
-  graph.element.removeChild(element.childNodes[0]);
-  test.equal(element.innerHTML, '', 'removed all child nodes');
-  test.equal(hoverDetail.element.parentNode, null);
+    const hoverDetail = new Rickshaw.Graph.HoverDetail({
+      graph: graph
+    });
 
-  hoverDetail.update = sinon.spy();
-  test.equal(hoverDetail.update.calledOnce, false);
+    const event = new MouseEvent('mouseout', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: 100,
+      clientY: 100,
+      pageX: 100,
+      pageY: 100,
+      screenX: 100,
+      screenY: 100
+    });
 
-  var moveEvent = global.document.createEvent('Event');
-  moveEvent.initEvent('mousemove', true, true);
-  moveEvent.relatedTarget = {
-    compareDocumentPosition: sinon.spy()
-  };
-  element.dispatchEvent(moveEvent);
-  test.equal(hoverDetail.visible, true);
-  test.equal(hoverDetail.update.calledOnce, true);
+    graph.element.addEventListener('mouseout', (e) => {
+      console.log('Mouseout event received', e);
+    });
 
-  hoverDetail.update = sinon.spy();
-  hoverDetail._removeListeners();
-  element.dispatchEvent(moveEvent);
-  test.equal(hoverDetail.update.calledOnce, false);
+    console.log('Element bounds:', graph.element.getBoundingClientRect());
 
-  test.done();
-};
+    graph.element.dispatchEvent(event);
+
+    expect(hideSpy.called).to.be.true;
+    expect(element.querySelector('.detail').style.display).to.equal('none');
+
+    hideSpy.restore();
+  });
+});

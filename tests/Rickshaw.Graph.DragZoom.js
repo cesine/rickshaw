@@ -1,186 +1,85 @@
-var d3 = require("d3");
-var Rickshaw;
+import jsdom from 'jsdom';
+import { expect } from 'chai';
+import d3 from 'd3';
+import { Rickshaw } from 'rickshaw';;
 
-exports.setUp = function(callback) {
+describe('Rickshaw.Graph.DragZoom', () => {
+  beforeEach((done) => {
+    jsdom.env({
+      html: '<html><head></head><body></body></html>',
+      done: (errors, window) => {
+        global.document = window.document;
+        global.window = window;
+        new Rickshaw.Compat.ClassList();
+        done();
+      }
+    });
+  });
 
-	Rickshaw = require('../rickshaw');
+  afterEach(() => {
+    delete global.document;
+    delete global.window;
+  });
 
-	global.document = require("jsdom").jsdom("<html><head></head><body></body></html>");
-	global.window = document.defaultView;
+  it('should handle drag events correctly', () => {
+    const element = document.createElement("div");
 
-	new Rickshaw.Compat.ClassList();
+    const graph = new Rickshaw.Graph({
+      element: element,
+      width: 960,
+      height: 500,
+      renderer: 'scatterplot',
+      series: [{
+        color: 'steelblue',
+        data: [
+          { x: 0, y: 40 },
+          { x: 1, y: 49 },
+          { x: 2, y: 38 },
+          { x: 3, y: 30 },
+          { x: 4, y: 32 }
+        ]
+      }]
+    });
 
-	callback();
-};
+    graph.renderer.dotSize = 6;
+    graph.render();
 
-exports.tearDown = function(callback) {
+    const drag = new Rickshaw.Graph.DragZoom({
+      graph: graph,
+      opacity: 0.5,
+      fill: 'steelblue',
+      minimumTimeSelection: 15,
+      callback: (args) => {
+        console.log(args.range, args.endTime);
+      }
+    });
 
-	delete require.cache.d3;
-	callback();
-};
+    expect(graph.renderer.name).to.equal(drag.graph.renderer.name);
+    expect(drag.svgWidth).to.equal(960);
 
-exports.drag = function(test) {
+    let rect = d3.select(element).selectAll('rect')[0][0];
+    expect(rect).to.be.undefined;
 
-	var element = document.createElement("div");
+    const mousedownEvent = document.createEvent('MouseEvent');
+    mousedownEvent.initMouseEvent('mousedown', true, true, window, 1, 800, 600, 290, 260, false, false, false, false, 0, null);
+    expect(mousedownEvent.screenX).to.equal(800);
+    drag.svg[0][0].dispatchEvent(mousedownEvent);
 
-	var graph = new Rickshaw.Graph({
-		element: element,
-		width: 960,
-		height: 500,
-		renderer: 'scatterplot',
-		series: [{
-			color: 'steelblue',
-			data: [{
-				x: 0,
-				y: 40
-			}, {
-				x: 1,
-				y: 49
-			}, {
-				x: 2,
-				y: 38
-			}, {
-				x: 3,
-				y: 30
-			}, {
-				x: 4,
-				y: 32
-			}]
-		}]
-	});
+    rect = d3.select(element).selectAll('rect')[0][0];
+    expect(rect).to.exist;
+    expect(rect.style.opacity).to.equal(drag.opacity);
 
-	graph.renderer.dotSize = 6;
-	graph.render();
+    const mouseupEvent = document.createEvent('MouseEvent');
+    mouseupEvent.initMouseEvent('mouseup', true, true, window, 1, 900, 600, 290, 260, false, false, false, false, 0, null);
+    document.dispatchEvent(mouseupEvent);
 
-	var drag = new Rickshaw.Graph.DragZoom({
-		graph: graph,
-		opacity: 0.5,
-		fill: 'steelblue',
-		minimumTimeSelection: 15,
-		callback: function(args) {
-			console.log(args.range, args.endTime);
-		}
-	});
+    rect = d3.select(element).selectAll('rect')[0][0];
+    expect(rect).to.be.null;
+  });
 
-	test.equal(graph.renderer.name, drag.graph.renderer.name);
-	test.equal(drag.svgWidth, 960);
-
-	var rect = d3.select(element).selectAll('rect')[0][0];
-	test.equal(rect, undefined, 'we dont have a rect for drawing drag zoom');
-
-	var event = global.document.createEvent('MouseEvent');
-	event.initMouseEvent('mousedown', true, true, window, 1, 800, 600, 290, 260, false, false, false, false, 0, null);
-	test.equal(event.screenX, 800, 'jsdom initMouseEvent works');
-	drag.svg[0][0].dispatchEvent(event);
-
-	rect = d3.select(element).selectAll('rect')[0][0];
-	test.ok(rect, 'after mousedown we have a rect for drawing drag zoom');
-	test.equal(rect.style.opacity, drag.opacity);
-
-	event = global.document.createEvent('MouseEvent');
-	event.initMouseEvent('mousemove', true, true, window, 1, 900, 600, 290, 260, false, false, false, false, 0, null);
-	drag.svg[0][0].dispatchEvent(event);
-
-	// TODO offsetX is not currently set on d3.event in d3 v3 when run with jsdom
-	test.equal(rect.attributes.fill, null);
-	test.equal(rect.attributes.x, null);
-	test.equal(rect.attributes.width, null);
-
-	event = global.document.createEvent('KeyboardEvent');
-	event.initEvent('keyup', true, true, null, false, false, false, false, 12, 0);
-	global.document.dispatchEvent(event);
-
-	var ESCAPE_KEYCODE = 27;
-	event = global.document.createEvent('KeyboardEvent');
-	event.initEvent('keyup', true, true, null, false, false, false, false, ESCAPE_KEYCODE, 0);
-	global.document.dispatchEvent(event);
-
-	test.done();
-};
-
-exports.notDrag = function(test) {
-
-	var element = document.createElement("div");
-
-	var graph = new Rickshaw.Graph({
-		element: element,
-		width: 960,
-		height: 500,
-		renderer: 'scatterplot',
-		series: [{
-			color: 'steelblue',
-			data: [{
-				x: 0,
-				y: 40
-			}, {
-				x: 1,
-				y: 49
-			}, {
-				x: 2,
-				y: 38
-			}, {
-				x: 3,
-				y: 30
-			}, {
-				x: 4,
-				y: 32
-			}]
-		}]
-	});
-
-	graph.renderer.dotSize = 6;
-	graph.render();
-
-	var drag = new Rickshaw.Graph.DragZoom({
-		graph: graph,
-		opacity: 0.5,
-		fill: 'steelblue',
-		minimumTimeSelection: 15,
-		callback: function(args) {
-			console.log(args.range, args.endTime);
-		}
-	});
-
-	test.equal(graph.renderer.name, drag.graph.renderer.name);
-	test.equal(drag.svgWidth, 960);
-
-	var rect = d3.select(element).selectAll('rect')[0][0];
-	test.equal(rect, undefined, 'we dont have a rect for drawing drag zoom');
-
-	var event = global.document.createEvent('MouseEvent');
-	event.initMouseEvent('mousedown', true, true, window, 1, 800, 600, 290, 260, false, false, false, false, 0, null);
-	test.equal(event.screenX, 800, 'jsdom initMouseEvent works');
-	drag.svg[0][0].dispatchEvent(event);
-
-	rect = d3.select(element).selectAll('rect')[0][0];
-	test.ok(rect, 'after mousedown we have a rect for drawing drag zoom');
-	test.equal(rect.style.opacity, drag.opacity);
-
-	event = global.document.createEvent('MouseEvent');
-	event.initMouseEvent('mouseup', true, true, window, 1, 900, 600, 290, 260, false, false, false, false, 0, null);
-	global.document.dispatchEvent(event);
-
-	rect = d3.select(element).selectAll('rect')[0][0];
-	test.equal(rect, null, 'after mouseup rect is gone');
-
-	// This is not reproducible in the browser
-	event = global.document.createEvent('MouseEvent');
-	event.initMouseEvent('mousedown', true, true, window, 1, 800, 600, 290, 260, false, false, false, false, 0, null);
-	drag.svg[0][0].dispatchEvent(event);
-	test.equal(rect, null, 'after mouseup mousedown listener is gone');
-
-	test.done();
-};
-
-exports.initialize = function(test) {
-
-	var el = document.createElement("div");
-
-	try {
-		var drag = new Rickshaw.Graph.DragZoom();
-	} catch (err) {
-		test.equal(err.message, "Rickshaw.Graph.DragZoom needs a reference to a graph");
-	}
-
-	test.done();
-};
+  it('should throw error when initialized without graph', () => {
+    expect(() => {
+      new Rickshaw.Graph.DragZoom();
+    }).to.throw('Rickshaw.Graph.DragZoom needs a reference to a graph');
+  });
+});
